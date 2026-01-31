@@ -28,8 +28,11 @@ Pasos resumidos:
 4. Trigger the workflow
    - Go to the Actions tab → `Setup Forensics Environment` → `Run workflow`
    - Input: `reviewers` (comma-separated handles) and `required_approving_review_count` (default 1).
+   - Optional: set `REVIEWERS` to a small test set and run with `--dry-run` locally to inspect payloads without changes.
 
 5. Verificación
+   - The workflow now includes a verification step that runs after setup and will fail the workflow if the protection rule does not match the requested configuration.
+   - You can also run locally: `python scripts/setup_forensics_env.py --verify` to check current configuration.
    - Settings → Environments → `forensics` → Should list the protection rule with the required reviewers.
 
 Notas:

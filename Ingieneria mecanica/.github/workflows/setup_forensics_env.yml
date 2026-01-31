@@ -38,3 +38,18 @@ jobs:
           REQUIRED_APPROVING_REVIEW_COUNT: ${{ github.event.inputs.required_approving_review_count }}
         run: |
           python scripts/setup_forensics_env.py
+
+      - name: Verify environment configuration
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVIEWERS: ${{ github.event.inputs.reviewers }}
+          REQUIRED_APPROVING_REVIEW_COUNT: ${{ github.event.inputs.required_approving_review_count }}
+        run: |
+          python scripts/setup_forensics_env.py --verify
+
+      - name: Run unit tests for setup script
+        run: |
+          pip install pytest
+          pytest -q tests/test_setup_forensics_env.py
