@@ -45,9 +45,18 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\(\s*\d{4}\s*,\s*\d{4}\s*\)", re.I), "dicom_tag_pattern"),
     (re.compile(r"\b(?:" + "|".join([re.escape(t) for t in DICOM_TAGS]) + r")\b", re.I), "dicom_tag_name"),
     # PLC commands / patterns (more opcodes and memory addresses)
-    (re.compile(r"\b(?:" + "|".join(PLC_OPCODES) + r")\b\s*\w*", re.I), "plc_opcode"),
+    (re.compile(r"\b(?:" + "|".join(PLC_OPCODES) + r")\b", re.I), "plc_opcode"),
     (re.compile(r"%M\d+", re.I), "plc_memory_address"),
     (re.compile(r"\bR\d+\b", re.I), "plc_register"),
+    (re.compile(r"\bDB\d+(?:\.[A-Za-z0-9]+)?\b", re.I), "plc_db_address"),
+    (re.compile(r"\bI\d+\.\d+\b", re.I), "plc_input_address"),
+    (re.compile(r"\bQ\d+\.\d+\b", re.I), "plc_output_address"),
+    (re.compile(r"\bVAR_\w+\b|\bFB\b|\bFC\b", re.I), "plc_structured_text"),
+    # Modbus-like terms
+    (re.compile(r"\bCoil\b|\bHoldingRegister\b|\bInputRegister\b", re.I), "modbus_keywords"),
+    # DICOM UID-like heuristic (dotted numerics)
+    (re.compile(r"\b\d{1,6}(?:\.\d{1,10}){2,}\b"), "dicom_uid_like"),
+    (re.compile(r"\b7FE0,0010\b", re.I), "dicom_pixeldata_tag"),
     # long base64-like blobs detection
     (re.compile(r"[A-Za-z0-9+/]{100,}={0,2}"), "base64_blob"),
 ]
