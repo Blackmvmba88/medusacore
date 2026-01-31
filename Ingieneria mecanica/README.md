@@ -5,6 +5,12 @@
 ## 📌 Estado
 - **Estado:** Iniciando / En desarrollo / Mantener (elige y actualiza)
 
+## 🔒 Forensics & PII handling
+- Parser optionally collects originals of detected sensitive fields (`_forensics_originals`).
+- Use `tools/ingest_and_persist.py` to persist artifacts locally or upload to S3/GCS.
+- CI contains a `persist-forensics` job that runs in the `forensics` GitHub Environment and requires manual approval before artifacts are persisted and (optionally) uploaded.
+- See `docs/forensics.md` for full details and recommended retention/approval practices.
+
 ## 🧭 Estructura del proyecto
 - `src/` — Código fuente principal
 - `tests/` — Pruebas unitarias e integración

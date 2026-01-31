@@ -92,17 +92,31 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install pytest boto3
+          pip install pytest boto3 google-cloud-storage moto[server]
+      - name: Start moto S3 server (for dry-run uploads)
+        run: |
+          nohup moto_server s3 -p 5000 &
+          sleep 1
+      - name: Create test bucket
+        run: |
+          python - <<'PY'
+import boto3, os
+client=boto3.client('s3', endpoint_url='http://localhost:5000')
+client.create_bucket(Bucket='test-bucket')
+print('created')
+PY
       - name: Ingest generated corpus and persist forensics (requires approval)
+        env:
+          AWS_S3_ENDPOINT: http://localhost:5000
         run: |
           python tools/ingest_and_persist.py \
             --src tests/adversarial_corpus \
             --branch ${{ github.ref_name }} \
             --out tests/adversarial_artifacts \
             --batch \
-            ${GITHUB_S3_BUCKET:+--s3-bucket $GITHUB_S3_BUCKET} \
-            ${PERSIST_RETENTION_DAYS:+--retention-days $PERSIST_RETENTION_DAYS} \
-            ${PERSIST_APPROVED_BY:+--approved-by $PERSIST_APPROVED_BY}
+            --s3-bucket test-bucket \
+            --retention-days 90 \
+            --approved-by "ci@bot"
       - name: Upload artifacts (if any)
         uses: actions/upload-artifact@v4
         with:

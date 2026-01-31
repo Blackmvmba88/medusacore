@@ -64,15 +64,29 @@ def main():
 
     # optional upload to S3
     if args.s3_bucket:
+        import os
         import boto3
         from hydras.cloud import upload_artifacts_to_s3
 
-        client = boto3.client("s3")
+        endpoint = os.environ.get("AWS_S3_ENDPOINT")
+        client = boto3.client("s3", endpoint_url=endpoint) if endpoint else boto3.client("s3")
         uploaded = upload_artifacts_to_s3(results, args.s3_bucket, client)
         print("Uploaded to S3:")
         for u in uploaded:
             print(json.dumps(u, ensure_ascii=False))
-    else:
+
+    # optional upload to GCS
+    if args.gcs_bucket:
+        from google.cloud import storage
+        from hydras.gcs import upload_artifacts_to_gcs
+
+        client = storage.Client()
+        uploaded = upload_artifacts_to_gcs(results, args.gcs_bucket, client)
+        print("Uploaded to GCS:")
+        for u in uploaded:
+            print(json.dumps(u, ensure_ascii=False))
+
+    if not args.s3_bucket and not args.gcs_bucket:
         for r in results:
             print(json.dumps(r, ensure_ascii=False))
 
