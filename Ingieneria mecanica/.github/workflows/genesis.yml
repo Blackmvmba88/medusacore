@@ -76,3 +76,10 @@ jobs:
         run: python tools/generate_adversarial_corpus.py --out tests/adversarial_corpus
       - name: Run integration tests
         run: pytest -q tests/test_adversarial_corpus_integration.py
+      - name: Run forensics persistence tests
+        run: pytest -q tests/test_forensics_persistence.py
+      - name: Upload artifacts (if any)
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-artifacts
+          path: tests/adversarial_artifacts

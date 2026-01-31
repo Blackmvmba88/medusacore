@@ -16,12 +16,40 @@ HEADING_RE = re.compile(r"^###\s+(?P<name>.+)$", re.MULTILINE)
 FIELD_RE = re.compile(r"^-\s*(?P<key>[^:]+):\s*(?P<value>.+)$")
 # Security / robustness constants
 MAX_FIELD_CHARS = 5000
+# DICOM common tag names and simple patterns to flag
+DICOM_TAGS = [
+    "PatientName",
+    "PatientID",
+    "StudyInstanceUID",
+    "SeriesInstanceUID",
+    "StudyDate",
+    "Modality",
+]
+
+# PLC opcodes commonly seen in ladder/text representations
+PLC_OPCODES = [
+    "MOV", "LD", "ST", "OUT", "IN", "JMP", "CALL", "RET", "AND", "OR", "XOR", "SET", "RST"
+]
+
 SUSPICIOUS_PATTERNS = [
     (re.compile(r"<script", re.I), "html_script_tag"),
     (re.compile(r"rm\s+-rf", re.I), "dangerous_shell"),
     (re.compile(r"DROP\s+TABLE", re.I), "sql_injection"),
     (re.compile(r"OR\s+'1'='1", re.I), "sql_boolean_injection"),
     (re.compile(r"javascript:", re.I), "javascript_uri"),
+    # LaTeX / TeX injections
+    (re.compile(r"\\begin\{.+?\}", re.I), "latex_begin_environment"),
+    (re.compile(r"\$[^\$]+\$"), "latex_inline_math"),
+    # DICOM-like tags or header marker
+    (re.compile(r"\bDICM\b", re.I), "dicom_marker"),
+    (re.compile(r"\(\s*\d{4}\s*,\s*\d{4}\s*\)", re.I), "dicom_tag_pattern"),
+    (re.compile(r"\b(?:" + "|".join([re.escape(t) for t in DICOM_TAGS]) + r")\b", re.I), "dicom_tag_name"),
+    # PLC commands / patterns (more opcodes and memory addresses)
+    (re.compile(r"\b(?:" + "|".join(PLC_OPCODES) + r")\b\s*\w*", re.I), "plc_opcode"),
+    (re.compile(r"%M\d+", re.I), "plc_memory_address"),
+    (re.compile(r"\bR\d+\b", re.I), "plc_register"),
+    # long base64-like blobs detection
+    (re.compile(r"[A-Za-z0-9+/]{100,}={0,2}"), "base64_blob"),
 ]
 
 

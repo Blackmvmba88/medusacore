@@ -17,7 +17,7 @@ SAMPLES = {
 - Ojo de inteligencia: rm -rf / --no-preserve-root
 - Herramientas y recursos: sudo rm -rf /
 """,
-    "latex_injection.md": """
+    "latex_injection.md": r"""
 ### LaTeX Test
 - Enfoque corto: prueba LaTeX
 - Ojo de inteligencia: \begin{equation}E=mc^2\end{equation}
@@ -44,24 +44,48 @@ SAMPLES = {
 }
 
 
-def generate(output_dir: str | Path, make_count: int = 1):
+def generate(output_dir: str | Path, make_count: int = 1, sample_size: int = 0, randomize: bool = True):
+    """Generate an adversarial corpus with options.
+
+    Args:
+        output_dir: path to write files
+        make_count: number of random noise files to add
+        sample_size: if >0, copy first N files to `tests/adversarial_corpus/sample_set`
+        randomize: whether to add small random variants
+    Returns:
+        list of generated Path objects
+    """
+    from random import randint, choice
+
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+    created = []
     for name, content in SAMPLES.items():
-        if "{}" in content:
-            # generate a very long string to force truncation
+        c = content
+        if "{}" in c:
             long_text = "A" * 6000
-            content = content.format(long_text)
+            c = c.format(long_text)
+        if randomize:
+            c = c + "\n- NOTE: variant-id: {}\n".format(randint(1, 999999))
         p = out / name
-        p.write_text(content, encoding="utf-8")
+        p.write_text(c, encoding="utf-8")
+        created.append(p)
     # create additional randomized noisy files if requested
     for i in range(make_count):
         p = out / f"noise_{i}.md"
-        p.write_text(
-            "### Noise\n- Enfoque corto: random\n- Ojo de inteligencia: xyz\n",
-            encoding="utf-8",
+        content = "### Noise\n- Enfoque corto: random\n- Ojo de inteligencia: {}\n".format(
+            ''.join(choice('abcdef0123456789') for _ in range(40))
         )
-    return list(out.iterdir())
+        p.write_text(content, encoding="utf-8")
+        created.append(p)
+    # optionally create a sample-set folder with a limited number of files to commit
+    if sample_size > 0:
+        sample_dir = Path("tests/adversarial_corpus/sample_set")
+        sample_dir.mkdir(parents=True, exist_ok=True)
+        for idx, p in enumerate(created[:sample_size]):
+            dest = sample_dir / p.name
+            dest.write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
+    return created
 
 
 if __name__ == "__main__":
