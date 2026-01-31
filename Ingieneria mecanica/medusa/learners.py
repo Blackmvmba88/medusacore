@@ -14,6 +14,15 @@ from typing import List, Dict
 
 HEADING_RE = re.compile(r"^###\s+(?P<name>.+)$", re.MULTILINE)
 FIELD_RE = re.compile(r"^-\s*(?P<key>[^:]+):\s*(?P<value>.+)$")
+# Security / robustness constants
+MAX_FIELD_CHARS = 5000
+SUSPICIOUS_PATTERNS = [
+    (re.compile(r"<script", re.I), "html_script_tag"),
+    (re.compile(r"rm\s+-rf", re.I), "dangerous_shell"),
+    (re.compile(r"DROP\s+TABLE", re.I), "sql_injection"),
+    (re.compile(r"OR\s+'1'='1", re.I), "sql_boolean_injection"),
+    (re.compile(r"javascript:", re.I), "javascript_uri"),
+]
 
 
 def load_markdown(path: str) -> str:
@@ -21,15 +30,41 @@ def load_markdown(path: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
+def _detect_suspicious(val: str) -> List[str]:
+    reasons = []
+    for pat, name in SUSPICIOUS_PATTERNS:
+        if pat.search(val):
+            reasons.append(name)
+    return reasons
+
+
+def _truncate_if_needed(val: str) -> (str, bool):
+    if len(val) > MAX_FIELD_CHARS:
+        return val[:MAX_FIELD_CHARS] + "... [TRUNCATED]", True
+    return val, False
+
+
 def parse_block_lines(lines: List[str]) -> Dict[str, object]:
-    """Parsea las líneas dentro de una sección de disciplina a campos estructurados."""
-    out = {}
-    ejemplos = []
+    """Parsea las líneas dentro de una sección de disciplina a campos estructurados.
+
+    Añade detección sencilla de contenidos sospechosos y truncamiento para
+    evitar entradas excesivamente grandes.
+    """
+    out: Dict[str, object] = {}
+    ejemplos: List[str] = []
+    suspicious: Dict[str, List[str]] = {}
+
     for ln in lines:
         m = FIELD_RE.match(ln.strip())
         if m:
             key = m.group("key").strip()
             val = m.group("value").strip()
+            # truncar si es necesario
+            val, truncated = _truncate_if_needed(val)
+            # detectar contenido sospechoso
+            reasons = _detect_suspicious(val)
+            if reasons:
+                suspicious[key] = reasons
             # Normalizar claves a nombres cortos (en español)
             key_norm = key.lower()
             if key_norm.startswith("ejemplos"):
@@ -53,6 +88,8 @@ def parse_block_lines(lines: List[str]) -> Dict[str, object]:
                     ejemplos.append(t)
     if ejemplos:
         out["Ejemplos"] = ejemplos
+    if suspicious:
+        out["_suspicious"] = suspicious
     return out
 
 
