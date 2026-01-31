@@ -1,6 +1,7 @@
 from hydras.forensics import persist_forensics_entries, ForensicsHydra
 import json
 import os
+from pathlib import Path
 
 
 def test_persist_forensics_entries(tmp_path):
@@ -29,4 +30,16 @@ def test_persist_forensics_entries(tmp_path):
     # raw file includes originals
     with open(meta["raw_path"], "r", encoding="utf-8") as fh:
         raw = json.load(fh)
-    assert raw["originals"]["PatientName"] == "Perez^Maria"
+    assert raw["items"][0]["originals"]["PatientName"] == "Perez^Maria"
+
+
+def test_persist_forensics_entries_non_batch(tmp_path):
+    entries = [
+        {"name": "A", "_forensics_originals": {"k": "v1"}},
+        {"name": "B", "_forensics_originals": {"k": "v2"}},
+    ]
+    results = persist_forensics_entries(entries, branch="b", artifacts_dir=tmp_path, batch=False)
+    # Should create two artifacts (one per entry)
+    assert len(results) == 2
+    paths = [r["raw_path"] for r in results]
+    assert all(Path(p).exists() for p in paths)

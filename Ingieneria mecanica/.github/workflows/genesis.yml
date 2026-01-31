@@ -78,6 +78,8 @@ jobs:
         run: pytest -q tests/test_adversarial_corpus_integration.py
       - name: Run forensics persistence tests
         run: pytest -q tests/test_forensics_persistence.py
+      - name: Ingest generated corpus and persist forensics
+        run: python tools/ingest_and_persist.py --src tests/adversarial_corpus --branch ${{ github.ref_name }} --out tests/adversarial_artifacts --batch
       - name: Upload artifacts (if any)
         uses: actions/upload-artifact@v4
         with:

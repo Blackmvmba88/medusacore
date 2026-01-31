@@ -61,18 +61,37 @@ class ForensicsHydra:
 
 
 def persist_forensics_entries(
-    entries: list, branch: str, artifacts_dir: str | Path | None = None
+    entries: list,
+    branch: str,
+    artifacts_dir: str | Path | None = None,
+    batch: bool = True,
 ) -> list:
-    """Persist each entry's `_forensics_originals` via ForensicsHydra.capture.
+    """Persist forensics originals via ForensicsHydra.capture.
 
-    For each entry in `entries` that contains `_forensics_originals`, this helper
-    creates a ForensicsHydra (with `artifacts_dir` if given) and captures a
-    JSON artifact with context. Returns a list of metadata dicts from captures.
+    If `batch` is True, combine all `_forensics_originals` into a single
+    artifact (reduces artifact count). If False, persist one artifact per
+    entry containing `_forensics_originals`.
+
+    Returns a list of metadata dicts from captures.
     """
     results = []
     hydra = (
         ForensicsHydra(artifacts_dir) if artifacts_dir is not None else ForensicsHydra()
     )
+
+    if batch:
+        combined = []
+        for entry in entries:
+            originals = entry.get("_forensics_originals")
+            if originals:
+                combined.append({"name": entry.get("name"), "originals": originals})
+        if combined:
+            payload = {"batch": True, "items": combined, "parser": "medusa.learners"}
+            meta = hydra.capture(branch=branch, logs=payload)
+            results.append(meta)
+        return results
+
+    # non-batch: persist per-entry
     for entry in entries:
         originals = entry.get("_forensics_originals")
         if not originals:
