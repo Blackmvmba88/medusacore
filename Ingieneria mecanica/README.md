@@ -30,7 +30,10 @@ cd <repo-folder>
 ```bash
 # Node
 npm install
-# Python
+# Python (recomendado: crear virtualenv)
+python -m pip install --upgrade pip
+python -m pip install pytest
+# o si existe un requirements.txt
 pip install -r requirements.txt
 ```
 
