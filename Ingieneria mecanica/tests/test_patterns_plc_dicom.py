@@ -34,4 +34,8 @@ def test_detect_plc_patterns():
     for v in entry["_suspicious"].values():
         reasons.update(v)
     assert any(r.startswith("plc_") for r in reasons)
-    assert "plc_db_address" in reasons or "plc_input_address" in reasons or "plc_output_address" in reasons
+    assert (
+        "plc_db_address" in reasons
+        or "plc_input_address" in reasons
+        or "plc_output_address" in reasons
+    )

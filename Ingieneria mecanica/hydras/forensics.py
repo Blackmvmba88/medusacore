@@ -65,12 +65,17 @@ def persist_forensics_entries(
     branch: str,
     artifacts_dir: str | Path | None = None,
     batch: bool = True,
+    retention_days: int | None = None,
+    approved_by: str | None = None,
 ) -> list:
     """Persist forensics originals via ForensicsHydra.capture.
 
     If `batch` is True, combine all `_forensics_originals` into a single
     artifact (reduces artifact count). If False, persist one artifact per
     entry containing `_forensics_originals`.
+
+    `retention_days` and `approved_by` are included in the captured metadata
+    to provide retention policy and approval audit information.
 
     Returns a list of metadata dicts from captures.
     """
@@ -79,6 +84,12 @@ def persist_forensics_entries(
         ForensicsHydra(artifacts_dir) if artifacts_dir is not None else ForensicsHydra()
     )
 
+    meta_extra = {}
+    if retention_days is not None:
+        meta_extra["retention_days"] = int(retention_days)
+    if approved_by:
+        meta_extra["approved_by"] = approved_by
+
     if batch:
         combined = []
         for entry in entries:
@@ -86,7 +97,12 @@ def persist_forensics_entries(
             if originals:
                 combined.append({"name": entry.get("name"), "originals": originals})
         if combined:
-            payload = {"batch": True, "items": combined, "parser": "medusa.learners"}
+            payload = {
+                "batch": True,
+                "items": combined,
+                "parser": "medusa.learners",
+                "meta": meta_extra,
+            }
             meta = hydra.capture(branch=branch, logs=payload)
             results.append(meta)
         return results
@@ -100,6 +116,7 @@ def persist_forensics_entries(
             "entry_name": entry.get("name"),
             "originals": originals,
             "parser": "medusa.learners",
+            "meta": meta_extra,
         }
         meta = hydra.capture(branch=branch, logs=payload)
         results.append(meta)

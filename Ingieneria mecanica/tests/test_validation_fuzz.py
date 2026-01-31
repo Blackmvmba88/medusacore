@@ -4,7 +4,9 @@ from medusa.learners import parse_ingenierias_markdown
 
 
 def random_word(min_len=1, max_len=50):
-    return "".join(random.choice(string.printable) for _ in range(random.randint(min_len, max_len)))
+    return "".join(
+        random.choice(string.printable) for _ in range(random.randint(min_len, max_len))
+    )
 
 
 def test_parser_fuzz_no_crash_small_batch():

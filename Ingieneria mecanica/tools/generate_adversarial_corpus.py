@@ -44,7 +44,12 @@ SAMPLES = {
 }
 
 
-def generate(output_dir: str | Path, make_count: int = 1, sample_size: int = 0, randomize: bool = True):
+def generate(
+    output_dir: str | Path,
+    make_count: int = 1,
+    sample_size: int = 0,
+    randomize: bool = True,
+):
     """Generate an adversarial corpus with options.
 
     Args:
@@ -73,8 +78,10 @@ def generate(output_dir: str | Path, make_count: int = 1, sample_size: int = 0, 
     # create additional randomized noisy files if requested
     for i in range(make_count):
         p = out / f"noise_{i}.md"
-        content = "### Noise\n- Enfoque corto: random\n- Ojo de inteligencia: {}\n".format(
-            ''.join(choice('abcdef0123456789') for _ in range(40))
+        content = (
+            "### Noise\n- Enfoque corto: random\n- Ojo de inteligencia: {}\n".format(
+                "".join(choice("abcdef0123456789") for _ in range(40))
+            )
         )
         p.write_text(content, encoding="utf-8")
         created.append(p)

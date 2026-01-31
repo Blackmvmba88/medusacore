@@ -38,7 +38,9 @@ def test_persist_forensics_entries_non_batch(tmp_path):
         {"name": "A", "_forensics_originals": {"k": "v1"}},
         {"name": "B", "_forensics_originals": {"k": "v2"}},
     ]
-    results = persist_forensics_entries(entries, branch="b", artifacts_dir=tmp_path, batch=False)
+    results = persist_forensics_entries(
+        entries, branch="b", artifacts_dir=tmp_path, batch=False
+    )
     # Should create two artifacts (one per entry)
     assert len(results) == 2
     paths = [r["raw_path"] for r in results]

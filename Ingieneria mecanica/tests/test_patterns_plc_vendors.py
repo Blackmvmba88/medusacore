@@ -14,10 +14,7 @@ def test_detect_siemens_patterns():
     reasons = set()
     for v in entry["_suspicious"].values():
         reasons.update(v)
-    assert any(
-        r.startswith("plc_siemens") or r == "plc_db_address"
-        for r in reasons
-    )
+    assert any(r.startswith("plc_siemens") or r == "plc_db_address" for r in reasons)
 
 
 def test_detect_allen_bradley_patterns():

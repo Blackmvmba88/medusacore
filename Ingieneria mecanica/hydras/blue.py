@@ -1,5 +1,6 @@
 """Blue Team Hydra skeleton: defends and validates system integrity."""
 
+
 class BlueTeamHydra:
     def __init__(self, name: str = "blue"):
         self.name = name

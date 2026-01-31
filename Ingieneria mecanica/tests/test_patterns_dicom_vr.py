@@ -18,8 +18,7 @@ def test_detect_patient_birthdate_and_accession():
         reasons.update(v)
     assert "dicom_birthdate_DA" in reasons or "dicom_birthdate_iso" in reasons
     assert "dicom_patientname_value" in reasons
-    assert "dicom_accession_value" in reasons or \
-        "dicom_accession_tag_number" in reasons
+    assert "dicom_accession_value" in reasons or "dicom_accession_tag_number" in reasons
 
 
 def test_detect_dicom_tag_number_and_uid_formats():
@@ -36,5 +35,4 @@ def test_detect_dicom_tag_number_and_uid_formats():
     for v in entry["_suspicious"].values():
         reasons.update(v)
     assert "dicom_uid_like" in reasons
-    assert "dicom_tag_pattern" in reasons or \
-        "dicom_birthdate_tag_number" in reasons
+    assert "dicom_tag_pattern" in reasons or "dicom_birthdate_tag_number" in reasons

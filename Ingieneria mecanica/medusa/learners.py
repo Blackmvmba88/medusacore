@@ -70,7 +70,8 @@ SUSPICIOUS_PATTERNS = [
         "dicom_birthdate_iso",
     ),
     (re.compile(r"\bDOB\s*[:=]\s*\d{8}\b", re.I), "dicom_birthdate_DA_alt"),
-    (re.compile(r"\bAccessionNumber\s*[:=]\s*[\w\/-]{3,}\b", re.I),
+    (
+        re.compile(r"\bAccessionNumber\s*[:=]\s*[\w\/-]{3,}\b", re.I),
         "dicom_accession_value",
     ),
     (
@@ -96,13 +97,10 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\bVAR_\w+\b|\bFB\b|\bFC\b", re.I), "plc_structured_text"),
     # Siemens S7 / STEP7 patterns
     # Siemens specific patterns (defined via small regex constants)
-    (re.compile(r"\bDB\d+\.(?:DBB|DBW|DBD|DBX)\d+\b", re.I),
-     "plc_siemens_db_field"),
-    (re.compile(r"\b(?:FC|FB)\s*\d+\b", re.I),
-     "plc_siemens_function_block"),
+    (re.compile(r"\bDB\d+\.(?:DBB|DBW|DBD|DBX)\d+\b", re.I), "plc_siemens_db_field"),
+    (re.compile(r"\b(?:FC|FB)\s*\d+\b", re.I), "plc_siemens_function_block"),
     (re.compile(r"\bOB\d+\b", re.I), "plc_siemens_organization_block"),
-    (re.compile(r"\bS7(?:[-\s])?(?:300|400|1200|1500)\b", re.I),
-     "plc_siemens_model"),
+    (re.compile(r"\bS7(?:[-\s])?(?:300|400|1200|1500)\b", re.I), "plc_siemens_model"),
     (re.compile(r"\bSiemens\b", re.I), "plc_siemens_vendor"),
     # Allen-Bradley / Rockwell patterns (RSLogix / ControlLogix)
     (re.compile(r"\b[NBIL]\d+:\d+(?:/\d+)?\b", re.I), "plc_ab_tag_address"),

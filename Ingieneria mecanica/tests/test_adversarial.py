@@ -9,7 +9,9 @@ def test_evolve_principle_stores_malicious_evidence():
         "payload": "<script>alert('xss')</script>",
         "nested": {"a": [1, 2, {"b": "c"}]},
     }
-    entry = core.evolve_principle("recursion", "variant-malicious", "adversarial", malicious_evidence)
+    entry = core.evolve_principle(
+        "recursion", "variant-malicious", "adversarial", malicious_evidence
+    )
     # Evidence must be stored as-is and not executed; test checks equality
     assert entry["evidence"] == malicious_evidence
     assert core.evolution_log[-1]["evidence"] == malicious_evidence

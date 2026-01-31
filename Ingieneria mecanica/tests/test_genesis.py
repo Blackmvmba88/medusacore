@@ -1,4 +1,5 @@
 """Unit tests for core genesis primitives."""
+
 import pytest
 from core.genesis import PrimordialSeed, HermeticCore
 
@@ -11,7 +12,12 @@ def test_axiom_zero_exists():
 def test_derive_principles_has_keys():
     core = HermeticCore()
     keys = set(core.principles.keys())
-    expected = {"recursion", "resistance_oracle", "temporal_topology", "holographic_memory"}
+    expected = {
+        "recursion",
+        "resistance_oracle",
+        "temporal_topology",
+        "holographic_memory",
+    }
     assert expected.issubset(keys)
 
 

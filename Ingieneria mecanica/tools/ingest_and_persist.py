@@ -2,6 +2,7 @@
 
 Usage: python tools/ingest_and_persist.py --src tests/adversarial_corpus --branch mybranch --out tests/adversarial_artifacts --batch
 """
+
 from __future__ import annotations
 import argparse
 from pathlib import Path
@@ -11,11 +12,29 @@ from hydras.forensics import persist_forensics_entries
 
 
 def main():
-    p = argparse.ArgumentParser(description="Ingest markdown files and persist forensics")
-    p.add_argument("--src", required=True, help="Directory with .md files (or a single file)")
+    p = argparse.ArgumentParser(
+        description="Ingest markdown files and persist forensics"
+    )
+    p.add_argument(
+        "--src", required=True, help="Directory with .md files (or a single file)"
+    )
     p.add_argument("--branch", required=True, help="Branch name/context")
     p.add_argument("--out", default=None, help="Artifacts output dir (optional)")
-    p.add_argument("--batch", action="store_true", help="Batch entries into a single artifact")
+    p.add_argument(
+        "--batch", action="store_true", help="Batch entries into a single artifact"
+    )
+    p.add_argument(
+        "--s3-bucket", default=None, help="Optional S3 bucket to upload artifacts"
+    )
+    p.add_argument(
+        "--retention-days",
+        type=int,
+        default=None,
+        help="Retention days to include in metadata",
+    )
+    p.add_argument(
+        "--approved-by", default=None, help="Approval identity to include in metadata"
+    )
     args = p.parse_args()
 
     src = Path(args.src)
@@ -33,10 +52,29 @@ def main():
             ent["_source_file"] = str(f)
         all_entries.extend(parsed)
 
-    results = persist_forensics_entries(all_entries, branch=args.branch, artifacts_dir=args.out, batch=args.batch)
+    results = persist_forensics_entries(
+        all_entries,
+        branch=args.branch,
+        artifacts_dir=args.out,
+        batch=args.batch,
+        retention_days=args.retention_days,
+        approved_by=args.approved_by,
+    )
     print(f"Persisted {len(results)} artifacts")
-    for r in results:
-        print(json.dumps(r, ensure_ascii=False))
+
+    # optional upload to S3
+    if args.s3_bucket:
+        import boto3
+        from hydras.cloud import upload_artifacts_to_s3
+
+        client = boto3.client("s3")
+        uploaded = upload_artifacts_to_s3(results, args.s3_bucket, client)
+        print("Uploaded to S3:")
+        for u in uploaded:
+            print(json.dumps(u, ensure_ascii=False))
+    else:
+        for r in results:
+            print(json.dumps(r, ensure_ascii=False))
 
 
 if __name__ == "__main__":

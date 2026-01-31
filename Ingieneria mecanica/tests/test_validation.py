@@ -12,7 +12,9 @@ def test_principles_non_empty_strings():
 def test_evolve_preserves_original_and_adds_version():
     core = HermeticCore()
     original = core.principles.get("recursion")
-    entry = core.evolve_principle("recursion", "variant-validated", "unit-test", {"evidence": "ok"})
+    entry = core.evolve_principle(
+        "recursion", "variant-validated", "unit-test", {"evidence": "ok"}
+    )
     # original key must still exist and be unchanged
     assert core.principles["recursion"] == original
     # new version key should appear
