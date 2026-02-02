@@ -168,15 +168,17 @@ class Optimizer:
     - Learns from past performance
     """
     
-    def __init__(self, monitor: Optional[PerformanceMonitor] = None):
+    def __init__(self, monitor: Optional[PerformanceMonitor] = None, bottleneck_threshold: float = 1.0):
         """Initialize the optimizer.
         
         Args:
             monitor: Optional performance monitor to use
+            bottleneck_threshold: Duration threshold in seconds for identifying bottlenecks (default: 1.0)
         """
         self.monitor = monitor or PerformanceMonitor()
         self.optimization_log: List[Dict[str, Any]] = []
         self.parameters: Dict[str, Any] = self._initialize_parameters()
+        self.bottleneck_threshold = bottleneck_threshold
         logger.info("Optimizer initialized")
     
     def _initialize_parameters(self) -> Dict[str, Any]:
@@ -239,7 +241,7 @@ class Optimizer:
         bottlenecks = []
         if summary.get("by_operation"):
             for op, stats in summary["by_operation"].items():
-                if stats["avg_duration"] > 1.0:  # Operations taking >1 second
+                if stats["avg_duration"] > self.bottleneck_threshold:
                     bottlenecks.append({
                         "operation": op,
                         "avg_duration": stats["avg_duration"],

@@ -9,6 +9,7 @@ Esta aplicación web proporciona:
 import subprocess
 import os
 import sys
+import time
 from flask import Flask, render_template, flash, redirect, url_for, jsonify
 from pathlib import Path
 
@@ -40,7 +41,6 @@ def run_cleanup():
     
     try:
         # Medir el rendimiento de la operación
-        import time
         start_time = time.time()
         
         # Ejecutamos el script
