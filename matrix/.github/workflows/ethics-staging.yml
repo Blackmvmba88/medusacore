@@ -1,0 +1,35 @@
+name: Ethics Staging Integration
+
+on:
+  push:
+    branches: [ 'staging' ]
+
+jobs:
+  staging-ethics:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install (editable, ethics extras)
+      run: pip install -e .[ethics] || true
+    - name: Run staging smoke test
+      run: bash scripts/activate_ethical_layer.sh
+    - name: Check human oversight gate
+      run: |
+        python - <<'PY'
+        from src.blast_radius.ethics_adapter import apply_ethics_to_scoring
+        report = {"meta": {"version":"1.0","timestamp":"2026-02-03T00:00:00Z","policy_name":"ci-gate"}, "target": {"path":"./","sha256":"x","size_bytes":0,"file_count":0}, "blast_radius":{"score":0,"classification":"MINIMAL"}}
+        capabilities = {"network":["outbound_unrestricted"], "persistence":[], "obfuscation":[]}
+        context = {"explicit_consent": False, "audit_capabilities": []}
+        updated = apply_ethics_to_scoring(report, capabilities, context)
+        import json, sys
+        print(json.dumps(updated, indent=2))
+        if updated.get('ethical_governance',{}).get('human_oversight_required', False):
+            print('Human oversight required -> failing CI gate')
+            sys.exit(1)
+        else:
+            print('No oversight required -> pass')
+        PY

@@ -1,0 +1,10 @@
+[project]
+name = "blast-radius"
+version = "0.1.0"
+description = "Blast Radius - ethical governance for code"
+authors = [{name = "Your Org"}]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+ethics = ["pytest"]
