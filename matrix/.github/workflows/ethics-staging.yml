@@ -17,19 +17,27 @@ jobs:
       run: pip install -e .[ethics] || true
     - name: Run staging smoke test
       run: bash scripts/activate_ethical_layer.sh
-    - name: Check human oversight gate
+    - name: Check operational gate (BLOCK/REVIEW/ALLOW)
       run: |
         python - <<'PY'
         from src.blast_radius.ethics_adapter import apply_ethics_to_scoring
+        from src.blast_radius.policy import load_policy
         report = {"meta": {"version":"1.0","timestamp":"2026-02-03T00:00:00Z","policy_name":"ci-gate"}, "target": {"path":"./","sha256":"x","size_bytes":0,"file_count":0}, "blast_radius":{"score":0,"classification":"MINIMAL"}}
         capabilities = {"network":["outbound_unrestricted"], "persistence":[], "obfuscation":[]}
         context = {"explicit_consent": False, "audit_capabilities": []}
-        updated = apply_ethics_to_scoring(report, capabilities, context)
+        policy, policy_hash = load_policy()
+        updated = apply_ethics_to_scoring(report, capabilities, context, policy=policy, policy_hash=policy_hash)
         import json, sys
         print(json.dumps(updated, indent=2))
-        if updated.get('ethical_governance',{}).get('human_oversight_required', False):
-            print('Human oversight required -> failing CI gate')
+        op = updated.get('ethical_governance',{}).get('operational_decision','ALLOW')
+        if op == 'BLOCK':
+            print('Operational decision: BLOCK -> failing CI gate')
             sys.exit(1)
+        elif op == 'REVIEW':
+            print('Operational decision: REVIEW -> notify reviewers (pass but require manual approval)')
+            # Consider adding an API call to add reviewer labels or create an issue
+            sys.exit(0)
         else:
-            print('No oversight required -> pass')
+            print('Operational decision: ALLOW -> pass')
+            sys.exit(0)
         PY

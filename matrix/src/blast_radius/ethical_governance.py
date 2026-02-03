@@ -174,17 +174,26 @@ class EthicalGovernanceEngine:
         self, capabilities: Dict, context: Dict, judgments: List[EthicalJudgment]
     ) -> None:
         """Registro inmutable para auditoría posterior."""
+        # Deterministic id derived from capabilities + policy_hash + target_sha256 when available
+        id_input = {
+            "capabilities": capabilities,
+            "policy_hash": context.get("policy_hash"),
+            "target_sha256": context.get("target_sha256"),
+        }
+        decision_id = hashlib.sha256(json.dumps(id_input, sort_keys=True).encode()).hexdigest()
+
         decision_record = {
-            "id": hashlib.sha256(
-                f"{datetime.utcnow().isoformat()}{json.dumps(capabilities, sort_keys=True)}".encode()
-            ).hexdigest(),
+            "id": decision_id,
             "timestamp": datetime.utcnow().isoformat(),
             "capabilities_sha256": hashlib.sha256(
                 json.dumps(capabilities, sort_keys=True).encode()
             ).hexdigest(),
+            "policy_hash": context.get("policy_hash"),
+            "target_sha256": context.get("target_sha256"),
             "context_keys": list(context.keys()),
             "judgments": [j.to_dict() for j in judgments],
             "jurisdiction": self.jurisdiction,
+            "audit_trail_generated": True,
         }
 
         self.decision_history.append(decision_record)

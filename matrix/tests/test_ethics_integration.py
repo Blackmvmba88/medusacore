@@ -67,5 +67,41 @@ def test_apply_ethics_to_scoring_end_to_end():
     assert "ethical_penalty" in updated["ethical_governance"]
 
 
+def test_operational_decision_block():
+    report = {
+        "meta": {"version": "1.0", "timestamp": "2026-02-03T00:00:00Z", "policy_name": "test3"},
+        "target": {"path": "./", "sha256": "abc", "size_bytes": 0, "file_count": 0},
+        "blast_radius": {"score": 5, "classification": "MINIMAL"},
+    }
+
+    capabilities = {"network": ["outbound_unrestricted"], "persistence": [], "obfuscation": []}
+    context = {"explicit_consent": False, "audit_capabilities": []}
+
+    # craft a policy that blocks at 0.85 (default); the judgment generated has 0.9
+    from src.blast_radius.policy import DEFAULT_POLICY
+    policy = DEFAULT_POLICY.copy()
+
+    updated = apply_ethics_to_scoring(report, capabilities, context, policy=policy, policy_hash="ph1")
+
+    assert updated["ethical_governance"]["operational_decision"] == "BLOCK"
+    assert updated["ethical_governance"]["human_oversight_required"] is True
+
+
+def test_deterministic_decision_id():
+    from src.blast_radius.ethical_governance import global_ethics
+
+    caps = {"network": ["outbound_unrestricted"]}
+    ctx = {"explicit_consent": False, "audit_capabilities": [], "policy_hash": "ph1", "target_sha256": "t1"}
+
+    # Run two assessments with identical inputs
+    global_ethics.assess_code(caps, ctx)
+    id1 = global_ethics.decision_history[-1]["id"]
+
+    global_ethics.assess_code(caps, ctx)
+    id2 = global_ethics.decision_history[-1]["id"]
+
+    assert id1 == id2
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

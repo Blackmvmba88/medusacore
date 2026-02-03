@@ -10,6 +10,7 @@ from .ethics_adapter import (
     compute_ethics_penalty,
     apply_ethics_to_report,
     apply_ethics_to_scoring,
+    decide_operational_action,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "compute_ethics_penalty",
     "apply_ethics_to_report",
     "apply_ethics_to_scoring",
+    "decide_operational_action",
 ]

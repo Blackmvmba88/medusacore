@@ -1,0 +1,5 @@
+# Política por defecto para la gobernanza ética
+block_threshold: 0.85
+review_threshold: 0.6
+review_count: 1
+penalty_scale: 1.0

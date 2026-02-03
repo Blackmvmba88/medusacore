@@ -17,6 +17,7 @@ PY
 echo "Integrando con CI/CD en entorno: staging..."
 python - <<'PY'
 from src.blast_radius.ethics_adapter import apply_ethics_to_scoring
+from src.blast_radius.policy import load_policy
 import json
 sample_report = {
  "meta": {"version":"1.0","timestamp":"2026-02-03T00:00:00Z","policy_name":"staging-test"},
@@ -25,7 +26,8 @@ sample_report = {
 }
 capabilities = {"network":["outbound_unrestricted"], "persistence": ["local_file"], "obfuscation": []}
 context = {"explicit_consent": False, "audit_capabilities": []}
-updated = apply_ethics_to_scoring(sample_report, capabilities, context)
+policy, policy_hash = load_policy()
+updated = apply_ethics_to_scoring(sample_report, capabilities, context, policy=policy, policy_hash=policy_hash)
 print('Staging smoke test output:')
 print(json.dumps(updated, indent=2))
 PY
