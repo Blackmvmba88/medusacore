@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedusaCore Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            width: 100%;
+            margin-top: 12px;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+        
+        .principles-list {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .principle-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .recommendation {
+            padding: 12px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            margin: 8px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-link">← Volver al Panel</a>
+        <h1>🌌 MedusaCore Dashboard</h1>
+        <p>Monitor en tiempo real del sistema hermético</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Genesis Card -->
+        <div class="card">
+            <h2>🔑 AXIOM_ZERO</h2>
+            <div id="genesis-info" class="loading">Cargando...</div>
+        </div>
+        
+        <!-- Performance Card -->
+        <div class="card">
+            <h2>📊 Rendimiento</h2>
+            <div id="performance-info" class="loading">Cargando...</div>
+        </div>
+        
+        <!-- Analysis Card -->
+        <div class="card">
+            <h2>🔍 Análisis</h2>
+            <div id="analysis-info" class="loading">Cargando...</div>
+            <button class="button" onclick="runOptimization()">Ejecutar Optimización</button>
+        </div>
+        
+        <!-- Principles Card -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>📜 Principios Herméticos</h2>
+            <div id="principles-info" class="loading">Cargando...</div>
+        </div>
+    </div>
+    
+    <script>
+        // Cargar datos de Genesis
+        async function loadGenesis() {
+            try {
+                const response = await fetch('/api/genesis');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const html = `
+                        <div class="metric">
+                            <span class="metric-label">Statement:</span>
+                        </div>
+                        <p style="margin: 12px 0; font-style: italic; color: #555;">
+                            "${data.data.axiom_zero}"
+                        </p>
+                        <div class="metric">
+                            <span class="metric-label">Principios inicializados:</span>
+                            <span class="metric-value">${data.data.principle_count}</span>
+                        </div>
+                    `;
+                    document.getElementById('genesis-info').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('genesis-info').innerHTML = 
+                    '<p style="color: red;">Error al cargar datos</p>';
+            }
+        }
+        
+        // Cargar datos de rendimiento
+        async function loadPerformance() {
+            try {
+                const response = await fetch('/api/performance');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const summary = data.data;
+                    const html = `
+                        <div class="metric">
+                            <span class="metric-label">Operaciones totales:</span>
+                            <span class="metric-value">${summary.total_operations}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Tasa de éxito:</span>
+                            <span class="metric-value">${summary.overall_success_rate.toFixed(1)}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Duración promedio:</span>
+                            <span class="metric-value">${summary.overall_avg_duration.toFixed(3)}s</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Operaciones únicas:</span>
+                            <span class="metric-value">${summary.unique_operations}</span>
+                        </div>
+                    `;
+                    document.getElementById('performance-info').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('performance-info').innerHTML = 
+                    '<p style="color: red;">Error al cargar datos</p>';
+            }
+        }
+        
+        // Cargar análisis
+        async function loadAnalysis() {
+            try {
+                const response = await fetch('/api/analysis');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const analysis = data.data;
+                    let html = '';
+                    
+                    if (analysis.recommendations.length > 0) {
+                        html += '<h3 style="margin-bottom: 12px; font-size: 16px;">Recomendaciones:</h3>';
+                        analysis.recommendations.forEach(rec => {
+                            const cssClass = rec.includes('acceptable') ? 'recommendation success' : 'recommendation';
+                            html += `<div class="${cssClass}">${rec}</div>`;
+                        });
+                    }
+                    
+                    if (analysis.bottlenecks.length > 0) {
+                        html += `<p style="margin-top: 12px;"><span class="status-badge status-warning">
+                            ${analysis.bottlenecks.length} cuellos de botella detectados
+                        </span></p>`;
+                    } else {
+                        html += `<p style="margin-top: 12px;"><span class="status-badge status-success">
+                            Sin cuellos de botella
+                        </span></p>`;
+                    }
+                    
+                    document.getElementById('analysis-info').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('analysis-info').innerHTML = 
+                    '<p style="color: red;">Error al cargar análisis</p>';
+            }
+        }
+        
+        // Cargar principios
+        async function loadPrinciples() {
+            try {
+                const response = await fetch('/api/principles');
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<div class="principles-list">';
+                    for (const [name, text] of Object.entries(data.data.principles)) {
+                        html += `
+                            <div class="principle-item">
+                                <strong>${name}:</strong><br>
+                                <span style="color: #666;">${text.substring(0, 150)}...</span>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
+                    document.getElementById('principles-info').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('principles-info').innerHTML = 
+                    '<p style="color: red;">Error al cargar principios</p>';
+            }
+        }
+        
+        // Ejecutar optimización
+        async function runOptimization() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Optimizando...';
+            
+            try {
+                const response = await fetch('/api/optimize', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Optimización completada con éxito');
+                    // Recargar datos
+                    loadPerformance();
+                    loadAnalysis();
+                }
+            } catch (error) {
+                alert('Error al ejecutar optimización');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ejecutar Optimización';
+            }
+        }
+        
+        // Cargar todos los datos al iniciar
+        loadGenesis();
+        loadPerformance();
+        loadAnalysis();
+        loadPrinciples();
+        
+        // Actualizar cada 30 segundos
+        setInterval(() => {
+            loadPerformance();
+            loadAnalysis();
+        }, 30000);
+    </script>
+</body>
+</html>
