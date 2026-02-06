@@ -1,0 +1,55 @@
+name: "Setup Forensics Environment"
+
+on:
+  workflow_dispatch:
+    inputs:
+      reviewers:
+        description: 'Comma-separated GitHub usernames to add as required reviewers (e.g. alice,bob)'
+        required: true
+        default: 'Blackmvmba88'
+      required_approving_review_count:
+        description: 'Number of required approving reviews'
+        required: true
+        default: '1'
+
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyJWT requests
+
+      - name: Run setup script
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVIEWERS: ${{ github.event.inputs.reviewers }}
+          REQUIRED_APPROVING_REVIEW_COUNT: ${{ github.event.inputs.required_approving_review_count }}
+        run: |
+          python scripts/setup_forensics_env.py
+
+      - name: Verify environment configuration
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVIEWERS: ${{ github.event.inputs.reviewers }}
+          REQUIRED_APPROVING_REVIEW_COUNT: ${{ github.event.inputs.required_approving_review_count }}
+        run: |
+          python scripts/setup_forensics_env.py --verify
+
+      - name: Run unit tests for setup script
+        run: |
+          pip install pytest
+          pytest -q tests/test_setup_forensics_env.py

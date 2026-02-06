@@ -5,6 +5,21 @@
 ## 📌 Estado
 - **Estado:** Iniciando / En desarrollo / Mantener (elige y actualiza)
 
+## 🔒 Forensics & PII handling
+- Parser optionally collects originals of detected sensitive fields (`_forensics_originals`).
+- Use `tools/ingest_and_persist.py` to persist artifacts locally or upload to S3/GCS.
+- CI contains a `persist-forensics` job that runs in the `forensics` GitHub Environment and requires manual approval before artifacts are persisted and (optionally) uploaded.
+- See `docs/forensics.md` for full details and recommended retention/approval practices.
+
+## 🚩 Epic: Forensics Roadmap (plan épico)
+- **Resumen:** roadmap épico para convertir la ingesta y captura forense en un proceso auditable, automatizado y resistente (detección, redaction, capture, persistencia, retención y aprobaciones humanas).
+- **Documento:** `docs/roadmap_epic.md` (milestones, roles, KPIs).
+- **Issue / Epic:** https://github.com/Blackmvmba88/medusacore/issues/6
+- **PRs relacionadas:** Automatización del Environment y reglas de approvers — PR #7 (incluye workflow dispatch, script y verificación automática).
+- **Cómo usar:** instala el GitHub App según `docs/ops_forensics_env.md`, añade secrets `GITHUB_APP_ID` y `GITHUB_APP_PRIVATE_KEY`, y ejecuta la acción `Setup Forensics Environment` desde Actions (input: `reviewers`, `required_approving_review_count`).
+- **Notas:** la automatización incluye `--dry-run` y `--verify` para pruebas seguras; ver `scripts/setup_forensics_env.py` y `tests/test_setup_forensics_env.py`.
+
+
 ## 🧭 Estructura del proyecto
 - `src/` — Código fuente principal
 - `tests/` — Pruebas unitarias e integración
@@ -30,7 +45,10 @@ cd <repo-folder>
 ```bash
 # Node
 npm install
-# Python
+# Python (recomendado: crear virtualenv)
+python -m pip install --upgrade pip
+python -m pip install pytest
+# o si existe un requirements.txt
 pip install -r requirements.txt
 ```
 

@@ -5,9 +5,10 @@ as the initial kernel of the Medusa-Hydra system. It is intentionally
 minimal, deterministic and testable. No automatic git commits are performed
 by the module; any git interaction must be handled by an operator script.
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 import uuid
 
@@ -73,11 +74,17 @@ class HermeticCore:
 
     def _get_spacetime_coords(self) -> Dict[str, Any]:
         return {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "id": str(uuid.uuid4()),
         }
 
-    def evolve_principle(self, principle_name: str, new_variant: str, conditions: str, evidence: Dict[str, Any]):
+    def evolve_principle(
+        self,
+        principle_name: str,
+        new_variant: str,
+        conditions: str,
+        evidence: Dict[str, Any],
+    ):
         """Record an evolution of a principle without deleting previous versions.
 
         The previous version is preserved and a new variant key is created.
@@ -131,5 +138,5 @@ def run_genesis_dry_run() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     out = run_genesis_dry_run()
-    print(out['first_breath'])
-    print("Principles:", ', '.join(out['initial_principles']))
+    print(out["first_breath"])
+    print("Principles:", ", ".join(out["initial_principles"]))

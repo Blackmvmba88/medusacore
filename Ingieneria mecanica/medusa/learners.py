@@ -14,6 +14,110 @@ from typing import List, Dict
 
 HEADING_RE = re.compile(r"^###\s+(?P<name>.+)$", re.MULTILINE)
 FIELD_RE = re.compile(r"^-\s*(?P<key>[^:]+):\s*(?P<value>.+)$")
+# Security / robustness constants
+MAX_FIELD_CHARS = 5000
+# DICOM common tag names and simple patterns to flag
+DICOM_TAGS = [
+    "PatientName",
+    "PatientID",
+    "PatientBirthDate",
+    "AccessionNumber",
+    "StudyInstanceUID",
+    "SeriesInstanceUID",
+    "SOPInstanceUID",
+    "StudyDate",
+    "Modality",
+]
+
+# PLC opcodes commonly seen in ladder/text representations
+PLC_OPCODES = [
+    "MOV",
+    "LD",
+    "ST",
+    "OUT",
+    "IN",
+    "JMP",
+    "CALL",
+    "RET",
+    "AND",
+    "OR",
+    "XOR",
+    "SET",
+    "RST",
+]
+
+# Prebuilt regex snippets used in pattern compilation
+DICOM_TAGS_RE = r"\b(?:" + "|".join([re.escape(t) for t in DICOM_TAGS]) + r")\b"
+PLC_OPCODES_RE = r"\b(?:" + "|".join(PLC_OPCODES) + r")\b"
+
+SUSPICIOUS_PATTERNS = [
+    (re.compile(r"<script", re.I), "html_script_tag"),
+    (re.compile(r"rm\s+-rf", re.I), "dangerous_shell"),
+    (re.compile(r"DROP\s+TABLE", re.I), "sql_injection"),
+    (re.compile(r"OR\s+'1'='1", re.I), "sql_boolean_injection"),
+    (re.compile(r"javascript:", re.I), "javascript_uri"),
+    # LaTeX / TeX injections
+    (re.compile(r"\\begin\{[^\}]+\}", re.I), "latex_begin_environment"),
+    (re.compile(r"\$[^\$]+\$"), "latex_inline_math"),
+    # DICOM-like tags or header marker
+    (re.compile(r"\bDICM\b", re.I), "dicom_marker"),
+    (re.compile(r"\(\s*\d{4}\s*,\s*\d{4}\s*\)", re.I), "dicom_tag_pattern"),
+    (re.compile(DICOM_TAGS_RE, re.I), "dicom_tag_name"),
+    # DICOM VR / value heuristics (sensitive metadata)
+    (re.compile(r"\bPatientBirthDate\s*[:=]\s*\d{8}\b"), "dicom_birthdate_DA"),
+    (
+        re.compile(r"\bPatientBirthDate\s*[:=]\s*\d{4}-\d{2}-\d{2}\b"),
+        "dicom_birthdate_iso",
+    ),
+    (re.compile(r"\bDOB\s*[:=]\s*\d{8}\b", re.I), "dicom_birthdate_DA_alt"),
+    (
+        re.compile(r"\bAccessionNumber\s*[:=]\s*[\w\/-]{3,}\b", re.I),
+        "dicom_accession_value",
+    ),
+    (
+        re.compile(r"\bPatientName\s*[:=]\s*[A-Za-z0-9\^,\.\- ]{3,}\b"),
+        "dicom_patientname_value",
+    ),
+    (re.compile(r"\b(0008,0050)\b"), "dicom_accession_tag_number"),
+    (re.compile(r"\b(0010,0030)\b"), "dicom_birthdate_tag_number"),
+    (re.compile(r"\bPatientAddress\b", re.I), "dicom_patientaddress"),
+    (re.compile(r"\bReferringPhysicianName\b", re.I), "dicom_referring_physician"),
+    (re.compile(r"\bPatientSex\b", re.I), "dicom_patientsex"),
+    (re.compile(r"\bInstitutionName\b", re.I), "dicom_institution_name"),
+    # DICOM UID-like heuristic (dotted numerics)
+    (re.compile(r"\b\d{1,6}(?:\.\d{1,10}){2,}\b"), "dicom_uid_like"),
+    (re.compile(r"\b7FE0,0010\b", re.I), "dicom_pixeldata_tag"),
+    # PLC commands / patterns (opcodes and memory addresses)
+    (re.compile(PLC_OPCODES_RE, re.I), "plc_opcode"),
+    (re.compile(r"%M\d+", re.I), "plc_memory_address"),
+    (re.compile(r"\bR\d+\b", re.I), "plc_register"),
+    (re.compile(r"\bDB\d+(?:\.[A-Za-z0-9]+)?\b", re.I), "plc_db_address"),
+    (re.compile(r"\bI\d+\.\d+\b", re.I), "plc_input_address"),
+    (re.compile(r"\bQ\d+\.\d+\b", re.I), "plc_output_address"),
+    (re.compile(r"\bVAR_\w+\b|\bFB\b|\bFC\b", re.I), "plc_structured_text"),
+    # Siemens S7 / STEP7 patterns
+    # Siemens specific patterns (defined via small regex constants)
+    (re.compile(r"\bDB\d+\.(?:DBB|DBW|DBD|DBX)\d+\b", re.I), "plc_siemens_db_field"),
+    (re.compile(r"\b(?:FC|FB)\s*\d+\b", re.I), "plc_siemens_function_block"),
+    (re.compile(r"\bOB\d+\b", re.I), "plc_siemens_organization_block"),
+    (re.compile(r"\bS7(?:[-\s])?(?:300|400|1200|1500)\b", re.I), "plc_siemens_model"),
+    (re.compile(r"\bSiemens\b", re.I), "plc_siemens_vendor"),
+    # Allen-Bradley / Rockwell patterns (RSLogix / ControlLogix)
+    (re.compile(r"\b[NBIL]\d+:\d+(?:/\d+)?\b", re.I), "plc_ab_tag_address"),
+    (re.compile(r"\bMSG\b|\bTON\b|\bCTU\b|\bCOP\b", re.I), "plc_ab_opcodes"),
+    (re.compile(r"\bLocal:\d+:I\.Data\.\d+\b", re.I), "plc_ab_local_tag"),
+    (
+        re.compile(r"\b(?:Allen[- ]?Bradley|RSLogix|ControlLogix)\b", re.I),
+        "plc_allen_bradley_vendor",
+    ),
+    # Modbus-like terms
+    (
+        re.compile(r"\bCoil\b|\bHoldingRegister\b|\bInputRegister\b", re.I),
+        "modbus_keywords",
+    ),
+    # long base64-like blobs detection
+    (re.compile(r"[A-Za-z0-9+/]{100,}={0,2}"), "base64_blob"),
+]
 
 
 def load_markdown(path: str) -> str:
@@ -21,28 +125,100 @@ def load_markdown(path: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
-def parse_block_lines(lines: List[str]) -> Dict[str, object]:
-    """Parsea las líneas dentro de una sección de disciplina a campos estructurados."""
-    out = {}
-    ejemplos = []
+# Reasons that should be considered sensitive PII and therefore redacted
+SENSITIVE_REASONS = {
+    "dicom_birthdate_DA",
+    "dicom_birthdate_iso",
+    "dicom_birthdate_DA_alt",
+    "dicom_patientname_value",
+    "dicom_accession_value",
+    "dicom_patientaddress",
+    "dicom_referring_physician",
+    "dicom_patientsex",
+    "dicom_institution_name",
+}
+
+
+def _sha256_of_str(s: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def _detect_suspicious(val: str) -> List[str]:
+    reasons = []
+    for pat, name in SUSPICIOUS_PATTERNS:
+        if pat.search(val):
+            reasons.append(name)
+    return reasons
+
+
+def _sensitive_reasons_found(reasons: List[str]) -> bool:
+    return any(r in SENSITIVE_REASONS for r in reasons)
+
+
+def _truncate_if_needed(val: str) -> tuple[str, bool]:
+    if len(val) > MAX_FIELD_CHARS:
+        return val[:MAX_FIELD_CHARS] + "... [TRUNCATED]", True
+    return val, False
+
+
+def _extract_ejemplos_from_value(val: str) -> List[str]:
+    parts = re.split(r"\(\d+\)\s*", val)
+    return [p.strip(" -;.\n") for p in parts if p.strip()]
+
+
+def parse_block_lines(
+    lines: List[str], redact: bool = False, collect_forensics: bool = False
+) -> Dict[str, object]:
+    """Parsea las líneas dentro de una sección de disciplina a campos estructurados.
+
+    Añade detección de contenidos sospechosos, truncamiento, y opciones para
+    redacción automática o recopilación de elementos para forensics.
+
+    Args:
+        lines: lista de líneas dentro de la sección.
+        redact: si True, reemplaza valores sensibles por "[REDACTED]" y guarda hashes.
+        collect_forensics: si True, guarda los valores originales en
+            "_forensics_originals".
+    """
+    out: Dict[str, object] = {}
+    ejemplos: List[str] = []
+    suspicious: Dict[str, List[str]] = {}
+    redacted: Dict[str, List[str]] = {}
+    forensics_hashes: Dict[str, str] = {}
+    forensics_originals: Dict[str, str] = {}
+
     for ln in lines:
         m = FIELD_RE.match(ln.strip())
         if m:
             key = m.group("key").strip()
             val = m.group("value").strip()
-            # Normalizar claves a nombres cortos (en español)
-            key_norm = key.lower()
-            if key_norm.startswith("ejemplos"):
-                # ejemplos pueden estar en la misma línea o en líneas siguientes numeradas
-                # separar por (1) (2) si existen
-                parts = re.split(r"\(\d+\)\s*", val)
-                parts = [p.strip(" -;.\n") for p in parts if p.strip()]
-                if parts:
-                    ejemplos.extend(parts)
-                else:
-                    ejemplos.append(val)
+            orig_val = val
+            # truncar si es necesario
+            val, _ = _truncate_if_needed(val)
+            # detectar contenido sospechoso
+            reasons = _detect_suspicious(val)
+            if reasons:
+                suspicious[key] = reasons
+            # redacción y forensics
+            if redact and reasons and _sensitive_reasons_found(reasons):
+                out[key] = "[REDACTED]"
+                redacted[key] = reasons
+                forensics_hashes[key] = _sha256_of_str(orig_val)
+                if collect_forensics:
+                    forensics_originals[key] = orig_val
             else:
-                out[key] = val
+                # Normalizar claves a nombres cortos (en español)
+                key_norm = key.lower()
+                if key_norm.startswith("ejemplos"):
+                    parts = _extract_ejemplos_from_value(val)
+                    if parts:
+                        ejemplos.extend(parts)
+                    else:
+                        ejemplos.append(val)
+                else:
+                    out[key] = val
         else:
             # líneas extra (p. ej. items numerados) -> buscar (1) (2)
             s = ln.strip().lstrip("- ")
@@ -53,11 +229,27 @@ def parse_block_lines(lines: List[str]) -> Dict[str, object]:
                     ejemplos.append(t)
     if ejemplos:
         out["Ejemplos"] = ejemplos
+    if suspicious:
+        out["_suspicious"] = suspicious
+    if redacted:
+        out["_redacted"] = redacted
+    if forensics_hashes:
+        out["_forensics_hashes"] = forensics_hashes
+    if forensics_originals:
+        out["_forensics_originals"] = forensics_originals
     return out
 
 
-def parse_ingenierias_markdown(text: str) -> List[Dict[str, object]]:
-    """Extrae las secciones '### <Disciplina>' y parsea campos internos."""
+def parse_ingenierias_markdown(
+    text: str, redact: bool = False, collect_forensics: bool = False
+) -> List[Dict[str, object]]:
+    """Extrae las secciones '### <Disciplina>' y parsea campos internos.
+
+    Args:
+        text: markdown completo.
+        redact: si True, redacta valores sensibles.
+        collect_forensics: si True, además guarda originales para forensics.
+    """
     disciplines: List[Dict[str, object]] = []
     headings = list(HEADING_RE.finditer(text))
     for i, h in enumerate(headings):
@@ -67,7 +259,9 @@ def parse_ingenierias_markdown(text: str) -> List[Dict[str, object]]:
         block = text[start:end].strip()
         # split by lines and parse
         lines = [ln for ln in block.splitlines() if ln.strip()]
-        parsed = parse_block_lines(lines)
+        parsed = parse_block_lines(
+            lines, redact=redact, collect_forensics=collect_forensics
+        )
         parsed["name"] = name
         disciplines.append(parsed)
     return disciplines

@@ -4,6 +4,7 @@
 Usage:
     python scripts/genesis_run.py
 """
+
 from core.genesis import run_genesis_dry_run, HermeticCore
 
 
@@ -28,5 +29,5 @@ def main():
     print(mutation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
