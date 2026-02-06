@@ -52,6 +52,18 @@ Purpose: short, actionable guidance to help AI coding agents be immediately prod
 - Keep visual fidelity: small visual changes should be documented with before/after screenshots in the PR description.
 - No test suite is present—start with manual integration tests. If you add tests, document how to run them here.
 
+
+## Source of Truth for Protocol 🧪
+- The WebSocket contract is enforced by `tests/test_ws_contract.py`. If this test fails, the protocol has changed—update docs, fixtures, and both client/server intentionally.
+
+## Failure Modes 🚨
+- If the contract is violated, clients may:
+  - Fail to connect or receive no pitch data (silent UI)
+  - Log JSON parse or schema errors in browser/devtools
+  - Show "Nota" as "—" or RMS as zero unexpectedly
+- Server logs may show JSON decode errors or dropped WS connections.
+- CI will fail on PR if the contract test breaks, with a log artifact for review.
+
 ## Files to inspect for most tasks 🔎
 - `README.md` — product overview + run instructions
 - `server.py` — WebSocket server, pitch detection, `/ws` contract

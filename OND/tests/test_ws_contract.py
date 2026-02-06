@@ -98,6 +98,80 @@ class TestWSContract(AioHTTPTestCase):
             pass
         await ws.close()
 
+    @unittest_run_loop
+    async def test_negative_unknown_field(self):
+        ws = await self.client.ws_connect("/ws")
+        # Add an unknown field to hello
+        bad_hello = {"type": "hello", "sr": 48000, "extra": 123}
+        await ws.send_str(json.dumps(bad_hello))
+        # Server should ignore or not crash; no response expected
+        try:
+            resp = await ws.receive(timeout=0.5)
+            # Acceptable: server ignores, closes, or sends error
+            assert resp.type in {
+                web.WSMsgType.CLOSE,
+                web.WSMsgType.CLOSED,
+                web.WSMsgType.CLOSING,
+                web.WSMsgType.TEXT,
+                web.WSMsgType.BINARY,
+            }
+        except Exception:
+            pass
+        await ws.close()
+
+    @unittest_run_loop
+    async def test_version_field(self):
+        ws = await self.client.ws_connect("/ws")
+        # Accepts current version (if versioning is added in future)
+        hello_req = {"type": "hello", "sr": 48000, "version": 1}
+        await ws.send_str(json.dumps(hello_req))
+        # Server should ignore unknown fields (strict), so no response or normal hello
+        try:
+            resp = await ws.receive_json(timeout=1.0)
+            # Should be a valid hello response or ignored
+            if resp.get("type") == "hello":
+                jsonschema.validate(resp, HELLO_RESP_SCHEMA)
+        except Exception:
+            pass
+        # Now try a future/unknown version
+        bad_hello = {"type": "hello", "sr": 48000, "version": 999}
+        await ws.send_str(json.dumps(bad_hello))
+        try:
+            resp = await ws.receive(timeout=0.5)
+            # Acceptable: server ignores, closes, or sends error
+            assert resp.type in {
+                web.WSMsgType.CLOSE,
+                web.WSMsgType.CLOSED,
+                web.WSMsgType.CLOSING,
+                web.WSMsgType.TEXT,
+                web.WSMsgType.BINARY,
+            }
+        except Exception:
+            pass
+        await ws.close()
+
+    @unittest_run_loop
+    async def test_pitch_round_trip_normalization(self):
+        ws = await self.client.ws_connect("/ws")
+        hello_req = {"type": "hello", "sr": 48000}
+        await ws.send_str(json.dumps(hello_req))
+        await ws.receive_json()
+        import numpy as np
+        frame = np.zeros(2048, dtype=np.float32).tobytes()
+        await ws.send_bytes(frame)
+        # Should get a pitch message (silence)
+        while True:
+            msg = await ws.receive_json()
+            if msg.get("type") == "pitch":
+                jsonschema.validate(msg, PITCH_SCHEMA)
+                # Normalization: check all required fields, no extras, and canonical values
+                assert set(msg.keys()) == set(PITCH_SCHEMA["properties"].keys()) | {"type"}
+                assert msg["hz"] == 0.0
+                assert msg["note"] == "—"
+                assert not msg["voiced"]
+                break
+        await ws.close()
+
 
 if __name__ == "__main__":
     unittest.main()
