@@ -1,0 +1,5 @@
+# Test-only dependencies
+pytest
+pytest-asyncio
+aiohttp
+jsonschema

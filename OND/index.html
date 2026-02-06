@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OND — Haz de ondas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand">
+          <div class="logo">OND</div>
+          <div class="tagline">
+            <div class="title">Haz de ondas</div>
+            <div class="subtitle">Micrófono → envolvente → trenzado</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <label class="select">
+            <span>Fuente</span>
+            <select id="sourceSelect">
+              <option value="mic">Micrófono</option>
+              <option value="demo" selected>Demo</option>
+            </select>
+          </label>
+          <button id="startBtn" class="btn primary" type="button">Iniciar</button>
+          <button id="stopBtn" class="btn" type="button" disabled>Detener</button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="controls-stack">
+          <div class="controls-head">
+            <div class="signature">Elisa Thalia Castaño Maus</div>
+          </div>
+          <div class="controls">
+            <label class="control">
+              <span>Curvas</span>
+              <input id="lines" type="range" min="40" max="220" value="120" />
+            </label>
+            <label class="control">
+              <span>Sensibilidad</span>
+              <input id="sensitivity" type="range" min="0" max="200" value="120" />
+            </label>
+            <label class="control">
+              <span>Separación</span>
+              <input id="spread" type="range" min="0" max="200" value="90" />
+            </label>
+            <label class="control">
+              <span>Envolvente</span>
+              <input id="envelope" type="range" min="0" max="200" value="120" />
+            </label>
+            <label class="control">
+              <span>Color</span>
+              <input id="color" type="range" min="0" max="200" value="120" />
+            </label>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">RMS</div>
+            <div class="v" id="rmsValue">—</div>
+          </div>
+	          <div class="stat">
+	            <div class="k">Nota</div>
+	            <div class="v" id="hzValue">—</div>
+	          </div>
+          <div class="stat">
+            <div class="k">Bandas</div>
+            <div class="v" id="bandsValue">—</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="stage">
+        <canvas id="viz"></canvas>
+        <div class="hint" id="hint">
+          Pulsa <b>Iniciar</b>. En modo micrófono tu navegador pedirá permisos. Mejor en
+          <b>localhost</b>.
+        </div>
+      </div>
+
+      <footer class="foot">
+        <span class="pill">Tip</span>
+        <span class="foot-text">
+          Volumen → apertura. Agudos → densidad. Graves → “burbujas” de la envolvente.
+        </span>
+        <span class="credit">Elisa Thalia Castaño Maus</span>
+      </footer>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
